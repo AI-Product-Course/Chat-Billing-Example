@@ -29,9 +29,18 @@ class UserRepository(ABC):
 
 
 class InMemoryUserRepository(UserRepository):
+    _instance: Optional["InMemoryUserRepository"] = None
+    _initialized: bool = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
-        self._users: list[UserDTO] = []
+        if not self._initialized:
+            self._users: list[UserDTO] = []
+            self._initialized = True
 
     async def get_one(self, user_id: str) -> Optional[UserDTO]:
         for user in self._users:
@@ -95,7 +104,7 @@ class AuthService(BaseAuthService):
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        ctx = CryptContext(schemes=["bcrypt"])
         hashed_password = ctx.hash(password)
         return hashed_password
 
